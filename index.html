@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Sound Classifier</title>
+
+  <!-- TF.js & Speech Commands -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.9.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/speech-commands"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 20px;
+    }
+    #label {
+      font-size: 1.8rem;
+      margin-top: 25px;
+    }
+    #emoji {
+      font-size: 5rem;
+      margin-top: 15px;
+    }
+    button {
+      padding: 15px 30px;
+      font-size: 1.3rem;
+      cursor: pointer;
+      border-radius: 10px;
+      border: none;
+      background-color: #4CAF50;
+      color: white;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>🔊 Sound Classifier</h1>
+  <button onclick="startListening()">🎤 Start Listening</button>
+
+  <div id="label">대기 중...</div>
+  <div id="emoji">🙂</div>
+
+  <script>
+    let recognizer;
+
+    async function createModel() {
+      recognizer = speechCommands.create(
+        "BROWSER_FFT", 
+        undefined,
+        "model.json",
+        "metadata.json"
+      );
+      await recognizer.ensureModelLoaded();
+      return recognizer;
+    }
+
+    async function startListening() {
+      document.getElementById("label").innerText = "🎧 모델 로딩 중...";
+      const recognizer = await createModel();
+
+      const labels = recognizer.wordLabels();
+      document.getElementById("label").innerText = "Listening... (마이크 허용 필요)";
+
+      recognizer.listen(result => {
+        const scores = result.scores;
+        const maxIndex = scores.indexOf(Math.max(...scores));
+        const label = labels[maxIndex];
+
+        document.getElementById("label").innerText = "결과: " + label;
+
+        let emoji = "🙂";
+        if (label === "Baby Crying") emoji = "👶😢";
+        else if (label === "Doorbell") emoji = "🔔😊";
+        else if (label === "Fire Alarm") emoji = "🔥😨";
+        else if (label === "배경 소음") emoji = "🌫️😐";
+
+        document.getElementById("emoji").innerText = emoji;
+
+      }, {
+        overlapFactor: 0.5,
+        probabilityThreshold: 0.75
+      });
+
+      setTimeout(() => recognizer.stopListening(), 30000);
+    }
+  </script>
+</body>
+</html>
